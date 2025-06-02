@@ -1,4 +1,5 @@
 import requests
+import json
 import os
 from dotenv import load_dotenv # type: ignore
 from datetime import datetime, timedelta
@@ -102,16 +103,64 @@ class UntisClient:
             teacher_id = lesson['te'][0]['id'] if lesson['te'] else None
             room_id = lesson['ro'][0]['id'] if lesson['ro'] else None
 
+            is_cancelled = lesson.get('code') == 'cancelled'
+
             lessons.append({
                 "date": convert_date(lesson['date']),
+                "raw_date": lesson['date'],
                 "start_time": convert_to_time_format(lesson['startTime']),
                 "end_time": convert_to_time_format(lesson['endTime']),
-                "subject": subject,
+                "raw_start": lesson['startTime'],
+                "raw_end": lesson['endTime'],
+                "subject": "Cancelled" if is_cancelled else subject,
                 "teacher_id": teacher_id,
-                "room_id": room_id
+                "room_id": room_id,
+                "is_cancelled": is_cancelled
             })
 
-        return sorted(lessons, key=lambda x: (x['date'], x['start_time']))
+        # Remove overlapping cancelled lessons
+        filtered_lessons = []
+        seen = {}
+
+        for lesson in lessons:
+            key = (lesson["raw_date"], lesson["raw_start"], lesson["raw_end"])
+            if key not in seen:
+                seen[key] = lesson
+            else:
+                # If one is cancelled and the other is not, keep the not-cancelled one
+                if seen[key]["is_cancelled"] and not lesson["is_cancelled"]:
+                    seen[key] = lesson
+                # If both are cancelled or both are not, keep the first one (no change)
+
+        filtered_lessons = list(seen.values())
+        filtered_lessons.sort(key=lambda x: (x['date'], x['start_time']))
+
+        return filtered_lessons
+    
+    def get_raw_data(self, days_ahead=1): # Debug Function for Testing Purposes
+        if not self.logged_in:
+            raise Exception("Not logged in!")
+
+        today = datetime.now()
+        start_date = int((today + timedelta(days=1)).strftime("%Y%m%d"))
+        end_date = int((today + timedelta(days=days_ahead)).strftime("%Y%m%d"))
+
+        payload = {
+            "id": "ID_TIMETABLE",
+            "method": "getTimetable",
+            "params": {
+                "id": self.person_id,
+                "type": 5, # Student
+                "startDate": start_date,
+                "endDate": end_date
+            },
+            "jsonrpc": "2.0"
+        }
+        response = self.session.post(BASE_URL, json=payload)
+        data = response.json()
+
+        decoded_data = json.dumps(data, indent=2, ensure_ascii=False)
+        return decoded_data
 
     def __enter__(self):
         self.login()
