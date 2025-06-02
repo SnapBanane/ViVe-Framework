@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 load_dotenv()
 USERNAME = os.getenv("UNTIS_USERNAME")
 PASSWORD = os.getenv("UNTIS_PASSWORD")
-SCHOOL = "gym-haan"
+SCHOOL = os.getenv("UNTIS_SCHOOL")
 BASE_URL = f"https://hepta.webuntis.com/WebUntis/jsonrpc.do?school={SCHOOL}"
 
 SUBJECTS = {
