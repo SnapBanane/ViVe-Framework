@@ -4,6 +4,29 @@ import os
 from dotenv import load_dotenv # type: ignore
 from datetime import datetime, timedelta
 
+# How to use:
+#
+# first import the client:
+# from vive.untis.client import UntisClient
+#
+# then create an instance of the client:
+# client = UntisClient()
+#
+# to login, use:
+# client.login()
+#
+# to get the timetable, use:
+# lessons = client.get_timetable(days_ahead=1)
+#
+# to logout, use:
+# client.logout()
+#
+# Note: The client uses the WebUntis API, which requires a valid school and user credentials.
+# Make sure to set the environment variables UNTIS_USERNAME, UNTIS_PASSWORD, and UNTIS_SCHOOL
+# in your .env file.
+#
+# ----------
+
 # Load credentials once
 load_dotenv()
 USERNAME = os.getenv("UNTIS_USERNAME")
@@ -11,7 +34,7 @@ PASSWORD = os.getenv("UNTIS_PASSWORD")
 SCHOOL = os.getenv("UNTIS_SCHOOL")
 BASE_URL = f"https://hepta.webuntis.com/WebUntis/jsonrpc.do?school={SCHOOL}"
 
-SUBJECTS = {
+SUBJECTS = { # Add your own subjects here
     91: "Informatik",
     96: "English",
     229: "Sport",
@@ -25,6 +48,7 @@ SUBJECTS = {
     114: "Religion",
 }
 
+# Helper functions 
 def convert_to_time_format(num):
     num_str = str(num).zfill(4)
     return f"{num_str[:2]}:{num_str[2:]}"
@@ -103,7 +127,7 @@ class UntisClient:
             teacher_id = lesson['te'][0]['id'] if lesson['te'] else None
             room_id = lesson['ro'][0]['id'] if lesson['ro'] else None
 
-            is_cancelled = lesson.get('code') == 'cancelled'
+            is_cancelled = lesson.get('code') == 'cancelled' # If the lesson is cancelled for any reason e. g. teacher sick, then it will be labeled with 'cancelled'
 
             lessons.append({
                 "date": convert_date(lesson['date']),
@@ -118,7 +142,6 @@ class UntisClient:
                 "is_cancelled": is_cancelled
             })
 
-        # Remove overlapping cancelled lessons
         filtered_lessons = []
         seen = {}
 
@@ -162,6 +185,7 @@ class UntisClient:
         decoded_data = json.dumps(data, indent=2, ensure_ascii=False)
         return decoded_data
 
+    # Auto log in / out
     def __enter__(self):
         self.login()
         return self
