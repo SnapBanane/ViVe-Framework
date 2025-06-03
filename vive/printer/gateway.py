@@ -1,83 +1,88 @@
 import os
-import subprocess
-import logging
+import platform
 import shutil
 import zipfile
-import tempfile
-import win32print  # type: ignore
+import logging
+import subprocess
 import requests
 
-# Setup colorful, structured logging
-logging.basicConfig(
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    level=logging.INFO
-)
-logger = logging.getLogger("🖨️ PDFPrinter")
+# Windows-only import
+if platform.system() == "Windows":
+    import win32print
 
-SUMATRA_ZIP_URL = "https://www.sumatrapdfreader.org/dl/rel/3.5.2/SumatraPDF-3.5.2-64.zip"
-SUMATRA_FOLDER = os.path.join(os.path.dirname(__file__), "sumatrapdf")
-SUMATRA_EXE = os.path.join(SUMATRA_FOLDER, "SumatraPDF.exe")
+SUMATRA_URL = "https://www.sumatrapdfreader.org/dl/rel/3.5.2/SumatraPDF-3.5.2-64.zip"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SUMATRA_FOLDER = os.path.join(BASE_DIR, "sumatra")
+SUMATRA_EXE = os.path.join(SUMATRA_FOLDER, "SumatraPDF-3.5.2-64.exe")
+
+logging.basicConfig(level=logging.INFO)
 
 
-def ensure_sumatra() -> str:
-    """Ensures SumatraPDF is downloaded and ready to use."""
-    if os.path.isfile(SUMATRA_EXE):
-        logger.debug(f"SumatraPDF already exists at: {SUMATRA_EXE}")
-        return SUMATRA_EXE
+def _download_sumatra():
+    if os.path.exists(SUMATRA_EXE):
+        return
 
-    logger.info("📦 SumatraPDF not found – starting download...")
+    logging.info("Downloading SumatraPDF...")
     os.makedirs(SUMATRA_FOLDER, exist_ok=True)
+    zip_path = os.path.join(SUMATRA_FOLDER, "SumatraPDF.zip")
 
-    zip_path = os.path.join(tempfile.gettempdir(), "sumatra_tmp.zip")
+    with requests.get(SUMATRA_URL, stream=True) as r:
+        with open(zip_path, "wb") as f:
+            shutil.copyfileobj(r.raw, f)
 
-    logger.info(f"⬇️  Downloading from: {SUMATRA_ZIP_URL}")
-    response = requests.get(SUMATRA_ZIP_URL, stream=True)
-    if response.status_code != 200:
-        raise RuntimeError(f"Failed to download SumatraPDF: HTTP {response.status_code}")
-
-    with open(zip_path, "wb") as f:
-        shutil.copyfileobj(response.raw, f)
-
-    logger.info(f"✅ Download complete. Saved to temp: {zip_path}")
-    logger.info("📂 Extracting files...")
-
-    with zipfile.ZipFile(zip_path, "r") as zip_ref:
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(SUMATRA_FOLDER)
 
     os.remove(zip_path)
-    logger.info(f"🧰 SumatraPDF extracted to: {SUMATRA_FOLDER}")
-    return SUMATRA_EXE
+    logging.info("SumatraPDF installed to %s", SUMATRA_FOLDER)
 
 
-def get_default_printer() -> str:
-    """Returns the system's default printer name."""
-    printer = win32print.GetDefaultPrinter()
-    logger.info(f"🖨️  Default printer detected: {printer}")
-    return printer
-
-
-def print_pdf(pdf_path: str, printer: str = None):
-    """Prints a PDF using SumatraPDF silently."""
-    if not os.path.isfile(pdf_path):
-        logger.error(f"🚫 PDF file not found: {pdf_path}")
-        raise FileNotFoundError(f"PDF not found: {pdf_path}")
-
-    sumatra_exe = ensure_sumatra()
-    cmd = [sumatra_exe]
-
-    if printer:
-        cmd += ["-print-to", printer]
-        logger.info(f"📠 Printing to specified printer: {printer}")
+def get_printers():
+    system = platform.system()
+    if system == "Windows":
+        return [printer[2] for printer in win32print.EnumPrinters(2)]
+    elif system == "Darwin":  # macOS
+        try:
+            output = subprocess.check_output(["lpstat", "-p"]).decode()
+            return [line.split()[1] for line in output.strip().split("\n") if line.startswith("printer")]
+        except subprocess.CalledProcessError as e:
+            logging.error("Failed to list printers: %s", e)
+            return []
     else:
-        cmd += ["-print-to-default"]
-        logger.info("📠 Printing to default printer.")
+        raise NotImplementedError("get_printers is only implemented for Windows and macOS")
 
-    cmd.append(pdf_path)
 
-    logger.debug(f"🛠️  Executing command: {' '.join(cmd)}")
+def print_pdf(filepath: str, printer_name: str = None) -> bool:
+    if not os.path.exists(filepath):
+        logging.error(f"File not found: {filepath}")
+        return False
+
+    if not filepath.lower().endswith(".pdf"):
+        logging.error("Only PDF files are supported.")
+        return False
+
+    system = platform.system()
+
+    if system == "Windows":
+        _download_sumatra()
+        cmd = [SUMATRA_EXE, "-silent"]
+        if printer_name:
+            cmd += ["-print-to", printer_name]
+        else:
+            cmd += ["-print-to-default"]
+        cmd.append(filepath)
+    elif system == "Darwin":
+        cmd = ["lp"]
+        if printer_name:
+            cmd += ["-d", printer_name]
+        cmd.append(filepath)
+    else:
+        raise NotImplementedError("PDF printing is only supported on Windows and macOS")
+
     try:
         subprocess.run(cmd, check=True)
-        logger.info("✅ Print job sent successfully.")
+        logging.info(f"Printed {filepath}")
+        return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"❌ Print job failed: {e}")
-        raise
+        logging.error(f"Print command failed: {e}")
+        return False
