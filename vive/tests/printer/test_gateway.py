@@ -1,5 +1,5 @@
 import os
-import vive.printer.gateway as silent_pdf_printer
+import vive.modules.printer.gateway as silent_pdf_printer
 
 # Get absolute path to the sample.pdf in the current directory
 pdf_path = os.path.join(os.path.dirname(__file__), "sample.pdf")

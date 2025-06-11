@@ -46,6 +46,9 @@ SUBJECTS = { # Add your own subjects here
     107: "Erdkunde",
     69: "Chemie",
     114: "Religion",
+    77: "Biologie",
+    60: "Deutsch",
+    154: "Kunst",
 }
 
 # Helper functions 

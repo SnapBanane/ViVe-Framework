@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from vive.untis.client import UntisClient
+from vive.modules.untis.client import UntisClient
 
 class TestUntisClient(unittest.TestCase):
 

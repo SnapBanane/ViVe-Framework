@@ -1,3 +1,4 @@
 .env
 .pytest_chache
 __pychache__
+.venv

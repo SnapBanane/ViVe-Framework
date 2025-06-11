@@ -1,5 +1,5 @@
 import json
-from vive.untis.client import UntisClient
+from vive.modules.untis.client import UntisClient
 
 def test_get_raw_time_table():
     client = UntisClient()
