@@ -191,7 +191,7 @@ def health_check():
     return jsonify({"status": "healthy", "timestamp": time.time()})
 
 @app.route('/api/upload', methods=['POST'])
-def upload_file():
+def upload_file_async():
     """Handles file uploads, queues them for manual processing, and returns an immediate response."""
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file part"}), 400
@@ -219,6 +219,15 @@ def upload_file():
         })
 
     return jsonify({"success": False, "error": "File upload failed"}), 500
+
+# --- Authentication Endpoint (Placeholder) ---
+@app.route('/api/auth', methods=['POST'])
+def authenticate():
+    """
+    Placeholder for a real authentication mechanism.
+    For now, it simulates a successful login.
+    """
+    return jsonify({'authenticated': True, 'message': 'Login successful'})
 
 # --- Error Handlers (Unchanged) ---
 @app.errorhandler(404)

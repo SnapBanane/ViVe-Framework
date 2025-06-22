@@ -1,167 +1,101 @@
-let isLoggedIn = false;
-
-// Check server health on load
-window.onload = function() {
-    checkHealth();
-    listFiles();
-};
-
-async function checkHealth() {
-    try {
-        const response = await fetch('/api/health');
-        const data = await response.json();
-        
-        if (data.status === 'healthy') {
-            document.getElementById('status').textContent = 'Connected';
-            document.getElementById('status').className = 'status connected';
-        }
-    } catch (error) {
-        document.getElementById('status').textContent = 'Disconnected';
-        document.getElementById('status').className = 'status disconnected';
-    }
-}
-
-async function untisLogin() {
+document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
-    const loginStatus = document.getElementById('loginStatus');
-    
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging in...';
-    loginStatus.innerHTML = '<span class="loading">Connecting to Untis...</span>';
-    
-    try {
-        const response = await fetch('/api/untis/login', {
-            method: 'POST'
-        });
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            loginStatus.innerHTML = `<span class="success">${data.message}</span>`;
-            isLoggedIn = true;
-            document.getElementById('timetableBtn').disabled = false;
-            loginBtn.textContent = 'Logged In';
-        } else {
-            loginStatus.innerHTML = `<span class="error">Error: ${data.message}</span>`;
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Login to Untis';
+    const authSection = document.getElementById('auth-section');
+    const timetableSection = document.getElementById('timetable-section');
+    const statusDiv = document.getElementById('status');
+
+    // Check server health on load
+    checkHealth();
+
+    async function checkHealth() {
+        try {
+            const response = await fetch('/api/health');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'healthy') {
+                    statusDiv.textContent = 'Connected';
+                    statusDiv.className = 'status connected';
+                } else {
+                    throw new Error('Not healthy');
+                }
+            } else {
+                 throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            statusDiv.textContent = 'Disconnected';
+            statusDiv.className = 'status disconnected';
         }
-    } catch (error) {
-        loginStatus.innerHTML = `<span class="error">Connection error: ${error.message}</span>`;
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Login to Untis';
     }
-}
+
+    // Placeholder login
+    loginBtn.addEventListener('click', async () => {
+        // Simulate an API call
+        try {
+            const response = await fetch('/api/auth', { method: 'POST' });
+            if(response.ok) {
+                const data = await response.json();
+                if (data.authenticated) {
+                    authSection.style.display = 'none';
+                    timetableSection.style.display = 'block';
+                } else {
+                    alert('Authentication failed!');
+                }
+            } else {
+                alert('Authentication request failed!');
+            }
+        } catch (e) {
+            alert('Error during authentication!');
+        }
+    });
+});
 
 async function getTimetable() {
     const timetableBtn = document.getElementById('timetableBtn');
     const timetableData = document.getElementById('timetableData');
     
     timetableBtn.disabled = true;
-    timetableBtn.textContent = 'Connecting & Loading...';
-    timetableData.innerHTML = '<span class="loading">Logging into Untis and loading timetable...</span>';
-    
+    timetableBtn.textContent = 'Loading...';
+    timetableData.innerHTML = '';
+
     try {
         const response = await fetch('/api/untis/timetable');
         const data = await response.json();
         
         if (data.status === 'success') {
             displayTimetable(data.data);
-            timetableBtn.textContent = 'Refresh Timetable';
-            timetableData.innerHTML = `<div class="success-message">✓ ${data.message}</div>` + timetableData.innerHTML;
         } else {
-            timetableData.innerHTML = `<span class="error">Error: ${data.message}</span>`;
-            timetableBtn.textContent = 'Get Timetable (Auto-Login)';
+            timetableData.innerHTML = `<p style="color: #ff3b30;">Error: ${data.message}</p>`;
         }
     } catch (error) {
-        timetableData.innerHTML = `<span class="error">Connection error: ${error.message}</span>`;
-        timetableBtn.textContent = 'Get Timetable (Auto-Login)';
+        timetableData.innerHTML = `<p style="color: #ff3b30;">Connection error: ${error.message}</p>`;
     }
     
     timetableBtn.disabled = false;
+    timetableBtn.textContent = 'Get Timetable (Auto-Login)';
 }
 
 function displayTimetable(timetable) {
     const timetableData = document.getElementById('timetableData');
-    
-    if (timetable.length === 0) {
-        timetableData.innerHTML += '<p>No lessons found for tomorrow.</p>';
+    timetableData.innerHTML = ''; // Clear previous data
+
+    if (!timetable || timetable.length === 0) {
+        timetableData.innerHTML = '<p>No lessons found for tomorrow.</p>';
         return;
     }
-    
-    let html = '<h3>Tomorrow\'s Timetable:</h3>';
+
     timetable.forEach(entry => {
-        html += `
-            <div class="timetable-entry">
-                <strong>${entry.start_time} - ${entry.end_time}</strong><br>
-                Subject: ${entry.subject}<br>
-                ${entry.teacher_id ? `Teacher ID: ${entry.teacher_id}<br>` : ''}
-                ${entry.room_id ? `Room ID: ${entry.room_id}` : ''}
-                ${entry.is_cancelled ? '<span class="cancelled">CANCELLED</span>' : ''}
-            </div>
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'timetable-entry';
+        
+        let content = `
+            <p><strong>${entry.start_time} - ${entry.end_time}</strong></p>
+            <p><strong>Subject:</strong> ${entry.subject}</p>
         `;
+        if(entry.teacher_id) content += `<p><strong>Teacher:</strong> ${entry.teacher_id}</p>`;
+        if(entry.room_id) content += `<p><strong>Room:</strong> ${entry.room_id}</p>`;
+        if(entry.is_cancelled) content += `<p style="color: #ff3b30; font-weight: bold;">CANCELLED</p>`;
+
+        entryDiv.innerHTML = content;
+        timetableData.appendChild(entryDiv);
     });
-    
-    timetableData.innerHTML += html;
-}
-
-async function uploadFiles() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadStatus = document.getElementById('uploadStatus');
-    
-    if (fileInput.files.length === 0) {
-        uploadStatus.innerHTML = '<span class="error">Please select files to upload</span>';
-        return;
-    }
-    
-    uploadStatus.innerHTML = '<span class="loading">Uploading files...</span>';
-    
-    for (let file of fileInput.files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        try {
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                uploadStatus.innerHTML += `<br><span class="success">✓ ${file.name} uploaded</span>`;
-            } else {
-                uploadStatus.innerHTML += `<br><span class="error">✗ ${file.name}: ${data.message}</span>`;
-            }
-        } catch (error) {
-            uploadStatus.innerHTML += `<br><span class="error">✗ ${file.name}: ${error.message}</span>`;
-        }
-    }
-    
-    // Refresh file list after upload
-    setTimeout(listFiles, 1000);
-}
-
-async function listFiles() {
-    const fileList = document.getElementById('fileList');
-    fileList.innerHTML = '<span class="loading">Loading files...</span>';
-    
-    try {
-        const response = await fetch('/api/files');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            if (data.data.length === 0) {
-                fileList.innerHTML = '<p>No files uploaded yet.</p>';
-            } else {
-                let html = '<h4>Uploaded Files:</h4>';
-                data.data.forEach(filename => {
-                    html += `<div class="file-item">${filename}</div>`;
-                });
-                fileList.innerHTML = html;
-            }
-        } else {
-            fileList.innerHTML = `<span class="error">Error: ${data.message}</span>`;
-        }
-    } catch (error) {
-        fileList.innerHTML = `<span class="error">Connection error: ${error.message}</span>`;
-    }
 }

@@ -1,144 +1,150 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+/* General Styles */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
-    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #000000;
+    color: #ffffff;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top */
+    min-height: 100vh;
+    padding-top: 60px; /* Add padding to avoid overlap with sticky header */
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    width: 100%;
+    max-width: 1200px; /* Wider for dashboard */
+    margin: 20px;
 }
 
+/* Header */
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 10px;
+    background-color: rgba(28, 28, 30, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 15px 30px;
+    border-radius: 12px;
     margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 20px;
+    z-index: 1000;
+}
+
+header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.status {
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.status.connected {
+    background-color: #30d158;
+    color: black;
+}
+
+.status.disconnected {
+    background-color: #ff453a;
+    color: white;
+}
+
+/* Main Content */
+main {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.section {
+    background: #1c1c1e;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 15px;
+}
+
+/* Buttons */
+button {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #0a84ff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: #0078f0;
+}
+
+/* Timetable */
+#timetableData {
+    margin-top: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.timetable-entry {
+    background: #2c2c2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+.timetable-entry p {
+    margin: 5px 0;
+}
+
+/* Device Lists */
+.device-list {
+    list-style: none;
+    padding: 0;
+}
+
+.device-list li {
+    background: #2c2c2e;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-header h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
+.device-list .actions button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    margin-left: 5px;
 }
 
-.status {
-    padding: 10px 20px;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    font-weight: 500;
+.device-list .actions .approve-btn {
+    background-color: #30d158;
+    color: black;
 }
 
-.status.connected {
-    background-color: #4CAF50;
-}
-
-.status.disconnected {
-    background-color: #f44336;
-}
-
-.section {
-    background: white;
-    margin-bottom: 20px;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.section h2 {
-    margin-bottom: 20px;
-    color: #667eea;
-    border-bottom: 2px solid #667eea;
-    padding-bottom: 10px;
-}
-
-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-right: 10px;
-    margin-bottom: 10px;
-    transition: all 0.3s ease;
-}
-
-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-input[type="file"] {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 2px dashed #667eea;
-    border-radius: 6px;
-    width: 100%;
-}
-
-.timetable-entry {
-    background: #f8f9ff;
-    margin: 10px 0;
-    padding: 15px;
-    border-radius: 6px;
-    border-left: 4px solid #667eea;
-}
-
-.file-item {
-    background: #f0f0f0;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 4px;
-    font-family: monospace;
-}
-
-.success {
-    color: #4CAF50;
-    font-weight: bold;
-}
-
-.success-message {
-    background: #e8f5e8;
-    color: #4CAF50;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    border-left: 4px solid #4CAF50;
-}
-
-.error {
-    color: #f44336;
-    font-weight: bold;
-}
-
-.loading {
-    color: #667eea;
-    font-style: italic;
-}
-
-.cancelled {
-    color: #ff9800;
-    font-weight: bold;
-    background: #fff3e0;
-    padding: 2px 6px;
-    border-radius: 3px;
+.device-list .actions .deny-btn {
+    background-color: #ff453a;
 }
