@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViVe Framework Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ViVe Framework Dashboard</h1>
+            <div class="status" id="status">Disconnected</div>
+        </header>
+
+        <main>
+            <div class="section">
+                <h2>Timetable</h2>
+                <button id="timetableBtn" onclick="getTimetable()">Get Timetable (Auto-Login)</button>
+                <div id="timetableData"></div>
+            </div>
+
+            <div class="section">
+                <h2>File Upload</h2>
+                <input type="file" id="fileInput" multiple>
+                <button onclick="uploadFiles()">Upload Files</button>
+                <div id="uploadStatus"></div>
+            </div>
+
+            <div class="section">
+                <h2>Uploaded Files</h2>
+                <button onclick="listFiles()">Refresh File List</button>
+                <div id="fileList"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
