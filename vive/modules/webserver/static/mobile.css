@@ -1,0 +1,147 @@
+/* General Body & Root Styles */
+:root {
+    --background-color: #000000;
+    --text-color: #ffffff;
+    --primary-color: #0a84ff; /* A vibrant blue, common in iOS */
+    --header-background: rgba(28, 28, 30, 0.85); /* Semi-transparent dark grey */
+    --button-background: #2c2c2e; /* Dark grey for buttons */
+    --button-active-background: #3a3a3c; /* Slightly lighter grey for active state */
+    --status-connected-color: #30d158; /* Green for connected status */
+    --status-disconnected-color: #ff453a; /* Red for disconnected status */
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: env(safe-area-inset-top); /* Safe area for notch */
+    padding-bottom: env(safe-area-inset-bottom); /* Safe area for home indicator */
+}
+
+/* Header */
+.app-header {
+    background: var(--header-background);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 12px 20px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.app-header h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.connection-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--button-background);
+    padding: 6px 12px;
+    border-radius: 30px;
+}
+
+.indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--status-disconnected-color);
+    transition: background-color 0.5s ease;
+}
+
+.indicator-dot.connected {
+    background-color: var(--status-connected-color);
+}
+
+#statusText {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Main Content */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    text-align: center;
+}
+
+.upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.upload-btn {
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 16px 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+}
+
+.upload-btn:active {
+    transform: scale(0.96);
+    background-color: #007ae6; /* Slightly darker blue on press */
+}
+
+.btn-icon {
+    font-size: 1.4rem;
+}
+
+/* Hidden file input */
+#fileInput {
+    display: none;
+}
+
+/* Upload Status Message */
+.upload-status {
+    margin-top: 24px;
+    min-height: 22px;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.7);
+    transition: opacity 0.3s ease;
+}

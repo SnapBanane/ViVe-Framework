@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViVe Scanner</title>
+    <link rel="stylesheet" href="/static/mobile.css">
+</head>
+<body>
+    <!-- Main App -->
+    <div class="app-container" id="mainApp">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>📄 Scanner</h1>
+                <div class="connection-indicator" id="connectionStatus">
+                    <div class="indicator-dot"></div>
+                    <span id="statusText">Connecting</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="upload-container">
+                <button id="uploadButton" class="upload-btn">
+                    <span class="btn-icon">📷</span>
+                    Take Img
+                </button>
+                <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
+            </div>
+            <div class="upload-status" id="uploadStatus"></div>
+        </main>
+    </div>
+
+    <script src="/static/mobile.js"></script>
+</body>
+</html>

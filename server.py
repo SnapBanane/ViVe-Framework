@@ -13,6 +13,7 @@ from rich.text import Text
 from rich.columns import Columns
 from InquirerPy import inquirer
 from vive.modules.webserver.server import WebServer
+from vive.modules.portManager.manager import PortManager # Import PortManager
 
 console = Console()
 VIVE_ENV_PATH = os.path.join(os.path.dirname(__file__), "vive", ".env")
@@ -20,13 +21,16 @@ VIVE_ENV_PATH = os.path.join(os.path.dirname(__file__), "vive", ".env")
 class ViveServer:
     def __init__(self):
         self.web_server = None
+        self.port_manager = PortManager() # Instantiate PortManager
         self.services = {
-            "webserver": {"status": "stopped", "port": 5000, "instance": None}
+            "webserver": {"status": "stopped", "port": 5000, "instance": None},
+            "port_manager": {"status": "stopped", "port": None, "instance": self.port_manager}
         }
         self.logs = []
         self.config = {}
         self.running = False
         self.dashboard_active = False
+        self.port_manager.set_logger(self.log) # Set logger for PortManager
         
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime('%H:%M:%S')
@@ -70,6 +74,47 @@ class ViveServer:
                 self.log("Web server not running", "WARN")
         except Exception as e:
             self.log(f"Failed to stop web server: {e}", "ERROR")
+
+    def start_port_manager(self):
+        """Starts the port forwarding service."""
+        try:
+            if self.services["port_manager"]["status"] == "running":
+                self.log("Port Manager is already running.", "WARN")
+                return
+
+            # The web server must be running to forward its port
+            if self.services["webserver"]["status"] != "running":
+                self.log("Web server must be started before the Port Manager.", "WARN")
+                return
+
+            internal_port = self.services["webserver"]["port"]
+            self.port_manager.internal_port = internal_port
+            
+            # Start forwarding in a background thread
+            threading.Thread(target=self.port_manager.start_forwarding, daemon=True).start()
+            self.services["port_manager"]["status"] = "running"
+            self.log("Port Manager started. Attempting to forward port.")
+            
+            # Give it a moment to get the IP
+            time.sleep(2)
+            local_ip = self.port_manager.get_local_ip()
+            self.log(f"Server accessible on your local network at http://{local_ip}:{internal_port}", "SUCCESS")
+
+        except Exception as e:
+            self.log(f"Failed to start Port Manager: {e}", "ERROR")
+            self.services["port_manager"]["status"] = "error"
+
+    def stop_port_manager(self):
+        """Stops the port forwarding service."""
+        try:
+            if self.services["port_manager"]["status"] == "running":
+                self.port_manager.stop_forwarding()
+                self.services["port_manager"]["status"] = "stopped"
+                self.log("Port Manager stopped.")
+            else:
+                self.log("Port Manager is not running.", "WARN")
+        except Exception as e:
+            self.log(f"Failed to stop Port Manager: {e}", "ERROR")
 
     def get_system_info(self):
         import psutil
@@ -215,10 +260,12 @@ class ViveServer:
     def start_all_services(self):
         self.log("Starting all services...")
         self.start_web_server()
+        self.start_port_manager()  # Start the port manager
 
     def stop_all_services(self):
         self.log("Stopping all services...")
         self.stop_web_server()
+        self.stop_port_manager()  # Stop the port manager
 
     def show_menu(self):
         options = [
