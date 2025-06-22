@@ -222,21 +222,18 @@ class ViveServer:
 
     def show_menu(self):
         options = [
-            "📊 Show Dashboard",
-            "🔧 Show Config",
-            "🔄 Reload Config",
-            "🚀 Start All Services",
-            "🛑 Stop All Services",
-            "🌐 Start Web Server Only",
-            "❌ Stop Web Server Only",
-            "📝 View Logs",
-            "🚪 Exit"
+            "Show Config",
+            "Reload Config",
+            "Start All Services",
+            "Stop All Services",
+            "View Logs",
+            "Exit"
         ]
         choice = inquirer.select(
-            message="ViVe Server Management - Select an option:",
+            message="ViVe Backend Server - Main Menu",
             choices=options,
             default=options[0],
-            pointer="👉"
+            pointer=">"
         ).execute()
         return options.index(choice) + 1
 
@@ -283,33 +280,23 @@ class ViveServer:
             
             choice = self.show_menu()
             
-            if choice == 1:  # Dashboard
-                result = self.run_dashboard()
-                if result == "menu":
-                    continue
-            elif choice == 2:  # Show config
+            if choice == 1:  # Show config
                 self.show_config_menu()
                 input("\nPress Enter to return to menu...")
-            elif choice == 3:  # Reload config
+            elif choice == 2:  # Reload config
                 self.log("Reloading configuration...")
                 self.config = self.load_config()
                 input("\nPress Enter to return to menu...")
-            elif choice == 4:  # Start all services
+            elif choice == 3:  # Start all services
                 self.start_all_services()
                 input("\nPress Enter to return to menu...")
-            elif choice == 5:  # Stop all services
+            elif choice == 4:  # Stop all services
                 self.stop_all_services()
                 input("\nPress Enter to return to menu...")
-            elif choice == 6:  # Start web server
-                self.start_web_server()
-                input("\nPress Enter to return to menu...")
-            elif choice == 7:  # Stop web server
-                self.stop_web_server()
-                input("\nPress Enter to return to menu...")
-            elif choice == 8:  # View logs
+            elif choice == 5:  # View logs
                 self.show_logs_menu()
                 input("\nPress Enter to return to menu...")
-            elif choice == 9:  # Exit
+            elif choice == 6:  # Exit
                 self.log("Shutting down ViVe Server...")
                 self.stop_all_services()
                 self.running = False
