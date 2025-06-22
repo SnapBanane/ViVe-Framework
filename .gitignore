@@ -1,4 +1,11 @@
 .env
-.pytest_chache
-__pychache__
+.pytest_cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 .venv
+/inbox
+
+**/*_*

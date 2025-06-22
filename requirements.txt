@@ -5,3 +5,8 @@ requests
 flask
 flask-cors
 waitress
+psutil
+opencv-python
+pillow
+reportlab
+numpy
