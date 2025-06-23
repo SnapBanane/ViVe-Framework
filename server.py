@@ -12,6 +12,7 @@ from rich.live import Live
 from rich.text import Text
 from rich.columns import Columns
 from InquirerPy import inquirer
+import qrcode # Import the qrcode library
 from vive.modules.webserver.server import WebServer
 from vive.modules.portManager.manager import PortManager # Import PortManager
 
@@ -30,6 +31,8 @@ class ViveServer:
         self.config = {}
         self.running = False
         self.dashboard_active = False
+        self.pending_devices = set()
+        self.approved_devices = set()
         self.port_manager.set_logger(self.log) # Set logger for PortManager
         
     def log(self, message, level="INFO"):
@@ -54,7 +57,8 @@ class ViveServer:
                 self.log("Web server already running", "WARN")
                 return
             
-            self.web_server = WebServer(port=self.services["webserver"]["port"])
+            # Pass the ViveServer instance to the WebServer
+            self.web_server = WebServer(port=self.services["webserver"]["port"], vive_server=self)
             self.web_server.start()
             self.services["webserver"]["status"] = "running"
             self.services["webserver"]["instance"] = self.web_server
@@ -267,12 +271,47 @@ class ViveServer:
         self.stop_web_server()
         self.stop_port_manager()  # Stop the port manager
 
+    def show_qr_code(self):
+        """Generates and displays a QR code for the mobile URL."""
+        self.clear_console()
+        if self.services["webserver"]["status"] != "running":
+            console.print("[yellow]The web server is not running. Cannot generate QR code.[/yellow]")
+            return
+
+        local_ip = self.port_manager.get_local_ip()
+        if not local_ip:
+            console.print("[red]Could not determine local IP address.[/red]")
+            return
+
+        port = self.services["webserver"]["port"]
+        url = f"http://{local_ip}:{port}/mobile"
+
+        console.print(Panel(
+            f"Scan the QR code below with your mobile device to open:\n[bold cyan]{url}[/bold cyan]",
+            title="[bold blue]Mobile Access QR Code[/bold blue]",
+            border_style="blue"
+        ))
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        # Print the QR code to the console
+        qr.print_tty()
+
     def show_menu(self):
         options = [
             "Show Config",
             "Reload Config",
             "Start All Services",
             "Stop All Services",
+            "Device Management",
+            "Show Mobile QR Code", # New option
             "View Logs",
             "Exit"
         ]
@@ -298,6 +337,74 @@ class ViveServer:
             display_value = v if "PASSWORD" not in k.upper() else "*" * len(v)
             table.add_row(k, display_value)
         
+        console.print(table)
+
+    def show_device_management_menu(self):
+        while True:
+            self.clear_console()
+            console.print(Panel(
+                f"Pending Requests: {len(self.pending_devices)} | Approved Devices: {len(self.approved_devices)}",
+                title="[bold blue]Device Management[/bold blue]",
+                border_style="blue"
+            ))
+
+            menu_options = {
+                "Approve/Deny Pending Requests": self.handle_pending_requests,
+                "View Approved Devices": self.view_approved_devices,
+                "Back to Main Menu": None
+            }
+            
+            choice = inquirer.select(
+                message="Select an action",
+                choices=list(menu_options.keys()),
+                pointer=">"
+            ).execute()
+
+            if choice == "Back to Main Menu":
+                break
+            
+            action = menu_options[choice]
+            if action:
+                action()
+                input("\nPress Enter to return...")
+
+
+    def handle_pending_requests(self):
+        self.clear_console()
+        if not self.pending_devices:
+            console.print("[yellow]No pending device requests.[/yellow]")
+            return
+
+        device_id = inquirer.select(
+            message="Select a device to manage:",
+            choices=list(self.pending_devices),
+            pointer=">"
+        ).execute()
+
+        action = inquirer.select(
+            message=f"Action for {device_id}:",
+            choices=["Approve", "Deny"],
+            pointer=">"
+        ).execute()
+
+        if action == "Approve":
+            self.approved_devices.add(device_id)
+            self.pending_devices.remove(device_id)
+            self.log(f"Device {device_id} approved.", "SUCCESS")
+        elif action == "Deny":
+            self.pending_devices.remove(device_id)
+            self.log(f"Device {device_id} denied.", "WARN")
+
+    def view_approved_devices(self):
+        self.clear_console()
+        if not self.approved_devices:
+            console.print("[yellow]No approved devices.[/yellow]")
+            return
+        
+        table = Table(title="Approved Devices", show_header=True, header_style="bold green")
+        table.add_column("Device ID", style="cyan")
+        for device in self.approved_devices:
+            table.add_row(device)
         console.print(table)
 
     def show_logs_menu(self):
@@ -340,10 +447,15 @@ class ViveServer:
             elif choice == 4:  # Stop all services
                 self.stop_all_services()
                 input("\nPress Enter to return to menu...")
-            elif choice == 5:  # View logs
+            elif choice == 5:  # Device Management
+                self.show_device_management_menu()
+            elif choice == 6: # Show QR Code
+                self.show_qr_code()
+                input("\nPress Enter to return to menu...")
+            elif choice == 7:  # View logs
                 self.show_logs_menu()
                 input("\nPress Enter to return to menu...")
-            elif choice == 6:  # Exit
+            elif choice == 8:  # Exit
                 self.log("Shutting down ViVe Server...")
                 self.stop_all_services()
                 self.running = False

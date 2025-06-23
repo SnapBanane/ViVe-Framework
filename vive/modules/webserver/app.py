@@ -11,6 +11,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 import io
 import threading
+import uuid # Add uuid for device IDs
 
 # --- App Setup ---
 app = Flask(__name__, 
@@ -190,9 +191,57 @@ def health_check():
     """Health check endpoint"""
     return jsonify({"status": "healthy", "timestamp": time.time()})
 
+# --- Device Management API ---
+
+@app.route('/api/register_device', methods=['POST'])
+def register_device():
+    """
+    Registers a new device, adds it to the pending list, and returns a unique ID.
+    """
+    vive_server = app.config.get('VIVE_SERVER')
+    if not vive_server:
+        return jsonify({"success": False, "error": "Server not configured for device management"}), 500
+
+    device_name = request.json.get('name', 'Unnamed Device')
+    device_id = str(uuid.uuid4())
+    
+    vive_server.device_manager.add_pending_device(device_id, device_name)
+    
+    return jsonify({"success": True, "device_id": device_id})
+
+@app.route('/api/device_status/<device_id>', methods=['GET'])
+def device_status(device_id):
+    """
+    Checks if a device has been approved.
+    """
+    vive_server = app.config.get('VIVE_SERVER')
+    if not vive_server:
+        return jsonify({"status": "error", "message": "Server not configured for device management"}), 500
+
+    if vive_server.device_manager.is_device_approved(device_id):
+        return jsonify({"status": "approved"})
+    else:
+        return jsonify({"status": "pending"})
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file_async():
-    """Handles file uploads, queues them for manual processing, and returns an immediate response."""
+    """
+    Handles file uploads, queues them for manual processing, and returns an immediate response.
+    Requires device approval.
+    """
+    # --- Device Approval Check ---
+    vive_server = app.config.get('VIVE_SERVER')
+    if not vive_server:
+        return jsonify({"success": False, "error": "Server not configured for device management"}), 500
+
+    device_id = request.form.get('device_id')
+    if not device_id:
+        return jsonify({"success": False, "error": "Device ID is required"}), 403
+        
+    if not vive_server.device_manager.is_device_approved(device_id):
+        return jsonify({"success": False, "error": "Device not approved"}), 403
+    # --- End Check ---
+
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file part"}), 400
 

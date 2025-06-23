@@ -12,9 +12,10 @@ logging.getLogger('werkzeug').setLevel(logging.CRITICAL)
 logging.getLogger('flask').setLevel(logging.CRITICAL)
 
 class WebServer:
-    def __init__(self, host='0.0.0.0', port=2525):
+    def __init__(self, host='0.0.0.0', port=2525, vive_server=None):
         self.host = host
         self.port = port
+        self.vive_server = vive_server
         self.thread = None
         self.running = False
         self.original_stdout = sys.stdout
@@ -43,6 +44,9 @@ class WebServer:
             sys.stdout = devnull
             sys.stderr = devnull
             
+            # Pass the ViveServer instance to the app's config
+            app.config['VIVE_SERVER'] = self.vive_server
+
             app.run(
                 host=self.host,
                 port=self.port,
