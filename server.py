@@ -85,9 +85,6 @@ class ViveServer:
         self.start_web_server()
         self.start_port_manager()
         self.log("All services started successfully.")
-        self.log(f"Web server running on port {self.services['webserver']['port']}")
-        self.log(f"Port Manager running on port {self.port_manager.internal_port}")
-        self.log("Setup done. Serving...")
 
     def stop_services(self):
         """Stops all running services."""
