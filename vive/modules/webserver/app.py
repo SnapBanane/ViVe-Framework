@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template, send_from_directory
+from flask import Flask, jsonify, request, render_template, send_from_directory, redirect, url_for
 from flask_cors import CORS
 import os
 import time
@@ -169,16 +169,23 @@ def process_image_manually(image_path, output_pdf_path):
 
 # --- Frontend Routes (Unchanged) ---
 @app.route('/')
+def mobile():
+    """Serves the mobile-friendly interface."""
+    return render_template('mobile.html')
+
+@app.route('/admin')
 def index():
     """Serve the main frontend page"""
+    # Allow access only from the local machine for the admin panel
     if request.remote_addr != '127.0.0.1':
         return "Forbidden", 403
     return render_template('index.html')
 
 @app.route('/mobile')
-def mobile():
-    """Serves the mobile-friendly interface."""
-    return render_template('mobile.html')
+def mobile_redirect():
+    """Redirects /mobile to / for consistency."""
+    return redirect(url_for('mobile'))
+
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -191,57 +198,11 @@ def health_check():
     """Health check endpoint"""
     return jsonify({"status": "healthy", "timestamp": time.time()})
 
-# --- Device Management API ---
-
-@app.route('/api/register_device', methods=['POST'])
-def register_device():
-    """
-    Registers a new device, adds it to the pending list, and returns a unique ID.
-    """
-    vive_server = app.config.get('VIVE_SERVER')
-    if not vive_server:
-        return jsonify({"success": False, "error": "Server not configured for device management"}), 500
-
-    device_name = request.json.get('name', 'Unnamed Device')
-    device_id = str(uuid.uuid4())
-    
-    vive_server.device_manager.add_pending_device(device_id, device_name)
-    
-    return jsonify({"success": True, "device_id": device_id})
-
-@app.route('/api/device_status/<device_id>', methods=['GET'])
-def device_status(device_id):
-    """
-    Checks if a device has been approved.
-    """
-    vive_server = app.config.get('VIVE_SERVER')
-    if not vive_server:
-        return jsonify({"status": "error", "message": "Server not configured for device management"}), 500
-
-    if vive_server.device_manager.is_device_approved(device_id):
-        return jsonify({"status": "approved"})
-    else:
-        return jsonify({"status": "pending"})
-
 @app.route('/api/upload', methods=['POST'])
 def upload_file_async():
     """
     Handles file uploads, queues them for manual processing, and returns an immediate response.
-    Requires device approval.
     """
-    # --- Device Approval Check ---
-    vive_server = app.config.get('VIVE_SERVER')
-    if not vive_server:
-        return jsonify({"success": False, "error": "Server not configured for device management"}), 500
-
-    device_id = request.form.get('device_id')
-    if not device_id:
-        return jsonify({"success": False, "error": "Device ID is required"}), 403
-        
-    if not vive_server.device_manager.is_device_approved(device_id):
-        return jsonify({"success": False, "error": "Device not approved"}), 403
-    # --- End Check ---
-
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file part"}), 400
 
@@ -269,14 +230,37 @@ def upload_file_async():
 
     return jsonify({"success": False, "error": "File upload failed"}), 500
 
-# --- Authentication Endpoint (Placeholder) ---
-@app.route('/api/auth', methods=['POST'])
-def authenticate():
-    """
-    Placeholder for a real authentication mechanism.
-    For now, it simulates a successful login.
-    """
-    return jsonify({'authenticated': True, 'message': 'Login successful'})
+@app.route('/api/untis/timetable', methods=['GET'])
+def untis_timetable():
+    # Placeholder/mock data for timetable
+    return jsonify({
+        "status": "success",
+        "data": [
+            {"day": "Monday", "lessons": ["Math", "English", "Physics"]},
+            {"day": "Tuesday", "lessons": ["Biology", "History", "PE"]}
+        ]
+    })
+
+@app.route('/api/restart', methods=['POST'])
+def restart_services():
+    # Log and return a message instead of exiting
+    vive_server = app.config.get('VIVE_SERVER')
+    if vive_server:
+        vive_server.log("[ADMIN] Restart requested from web UI (no real restart, use a process manager)", "WARN")
+    return jsonify({'status': 'restarting', 'message': 'Restart requested. Please use a process manager for real restart.'})
+
+@app.route('/api/stop', methods=['POST'])
+def stop_services():
+    vive_server = app.config.get('VIVE_SERVER')
+    if vive_server:
+        vive_server.log("[ADMIN] Stop requested from web UI (no real stop, use a process manager)", "WARN")
+    return jsonify({'status': 'stopping', 'message': 'Stop requested. Please use a process manager for real stop.'})
+
+@app.route('/api/server_ip', methods=['GET'])
+def get_server_ip():
+    from vive.modules.portManager.manager import PortManager
+    ip = PortManager().get_local_ip()
+    return jsonify({'ip': ip})
 
 # --- Error Handlers (Unchanged) ---
 @app.errorhandler(404)
@@ -295,3 +279,11 @@ def run_server(host='0.0.0.0', port=5000, debug=False):
     else:
         from waitress import serve
         serve(app, host=host, port=port)
+
+@app.before_request
+def log_client_connect():
+    vive_server = app.config.get('VIVE_SERVER')
+    # Updated endpoints to log connections for admin and mobile pages
+    if vive_server and request.endpoint in ['mobile', 'index']:
+        client_ip = request.remote_addr
+        vive_server.log_client_connection(client_ip)

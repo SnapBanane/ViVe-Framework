@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ViVe Framework Dashboard</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
     <div class="container">
@@ -15,19 +16,16 @@
 
         <main>
             <div class="section">
+                <h2>Options</h2>
+                <button id="restartBtn">Restart All Services</button>
+                <button id="stopBtn">Stop All Services</button>
+                <button id="showIpBtn">Show Server IP</button>
+                <div id="serverIp"></div>
+            </div>
+            <div class="section">
                 <h2>Timetable</h2>
                 <button id="timetableBtn">Get Timetable</button>
                 <div id="timetableData"></div>
-            </div>
-
-            <div class="section">
-                <h2>Authenticated Devices</h2>
-                <ul id="authedDevicesList" class="device-list"></ul>
-            </div>
-
-            <div class="section">
-                <h2>Pending Requests</h2>
-                <ul id="pendingDevicesList" class="device-list"></ul>
             </div>
         </main>
     </div>

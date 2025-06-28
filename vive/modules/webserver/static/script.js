@@ -1,10 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const loginBtn = document.getElementById('loginBtn');
-    const authSection = document.getElementById('auth-section');
-    const timetableSection = document.getElementById('timetable-section');
     const statusDiv = document.getElementById('status');
+    const restartBtn = document.getElementById('restartBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const showIpBtn = document.getElementById('showIpBtn');
+    const serverIpDiv = document.getElementById('serverIp');
+    const timetableBtn = document.getElementById('timetableBtn');
+    const timetableData = document.getElementById('timetableData');
 
-    // Check server health on load
     checkHealth();
 
     async function checkHealth() {
@@ -27,75 +29,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Placeholder login
-    loginBtn.addEventListener('click', async () => {
-        // Simulate an API call
-        try {
-            const response = await fetch('/api/auth', { method: 'POST' });
-            if(response.ok) {
-                const data = await response.json();
-                if (data.authenticated) {
-                    authSection.style.display = 'none';
-                    timetableSection.style.display = 'block';
-                } else {
-                    alert('Authentication failed!');
-                }
-            } else {
-                alert('Authentication request failed!');
-            }
-        } catch (e) {
-            alert('Error during authentication!');
-        }
-    });
-});
-
-async function getTimetable() {
-    const timetableBtn = document.getElementById('timetableBtn');
-    const timetableData = document.getElementById('timetableData');
-    
-    timetableBtn.disabled = true;
-    timetableBtn.textContent = 'Loading...';
-    timetableData.innerHTML = '';
-
-    try {
-        const response = await fetch('/api/untis/timetable');
+    restartBtn.addEventListener('click', async () => {
+        const response = await fetch('/api/restart', { method: 'POST' });
         const data = await response.json();
-        
-        if (data.status === 'success') {
-            displayTimetable(data.data);
-        } else {
-            timetableData.innerHTML = `<p style="color: #ff3b30;">Error: ${data.message}</p>`;
-        }
-    } catch (error) {
-        timetableData.innerHTML = `<p style="color: #ff3b30;">Connection error: ${error.message}</p>`;
-    }
-    
-    timetableBtn.disabled = false;
-    timetableBtn.textContent = 'Get Timetable (Auto-Login)';
-}
-
-function displayTimetable(timetable) {
-    const timetableData = document.getElementById('timetableData');
-    timetableData.innerHTML = ''; // Clear previous data
-
-    if (!timetable || timetable.length === 0) {
-        timetableData.innerHTML = '<p>No lessons found for tomorrow.</p>';
-        return;
-    }
-
-    timetable.forEach(entry => {
-        const entryDiv = document.createElement('div');
-        entryDiv.className = 'timetable-entry';
-        
-        let content = `
-            <p><strong>${entry.start_time} - ${entry.end_time}</strong></p>
-            <p><strong>Subject:</strong> ${entry.subject}</p>
-        `;
-        if(entry.teacher_id) content += `<p><strong>Teacher:</strong> ${entry.teacher_id}</p>`;
-        if(entry.room_id) content += `<p><strong>Room:</strong> ${entry.room_id}</p>`;
-        if(entry.is_cancelled) content += `<p style="color: #ff3b30; font-weight: bold;">CANCELLED</p>`;
-
-        entryDiv.innerHTML = content;
-        timetableData.appendChild(entryDiv);
+        alert(data.message || 'Restart command sent!');
     });
-}
+
+    stopBtn.addEventListener('click', async () => {
+        const response = await fetch('/api/stop', { method: 'POST' });
+        const data = await response.json();
+        alert(data.message || 'Stop command sent!');
+    });
+
+    showIpBtn.addEventListener('click', async () => {
+        const response = await fetch('/api/server_ip');
+        const data = await response.json();
+        serverIpDiv.textContent = data.ip ? `Server IP: ${data.ip}` : 'Could not fetch IP.';
+    });
+
+    timetableBtn.addEventListener('click', getTimetable);
+
+    async function getTimetable() {
+        timetableBtn.disabled = true;
+        timetableBtn.textContent = 'Loading...';
+        timetableData.innerHTML = '';
+        try {
+            const response = await fetch('/api/untis/timetable');
+            const data = await response.json();
+            if (data.status === 'success') {
+                displayTimetable(data.data);
+            } else {
+                timetableData.innerHTML = `<p style="color: #ff3b30;">Error: ${data.message}</p>`;
+            }
+        } catch (error) {
+            timetableData.innerHTML = `<p style="color: #ff3b30;">Connection error: ${error.message}</p>`;
+        }
+        timetableBtn.disabled = false;
+        timetableBtn.textContent = 'Get Timetable';
+    }
+
+    function displayTimetable(timetable) {
+        timetableData.innerHTML = '';
+        if (!Array.isArray(timetable) || timetable.length === 0) {
+            timetableData.innerHTML = '<p>No timetable data available.</p>';
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'timetable-table';
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        headerRow.innerHTML = '<th>Day</th><th>Lessons</th>';
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        timetable.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${entry.day}</td><td>${entry.lessons.join(', ')}</td>`;
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        timetableData.appendChild(table);
+    }
+});

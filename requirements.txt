@@ -11,3 +11,4 @@ pillow
 reportlab
 numpy
 qrcode
+zeroconf

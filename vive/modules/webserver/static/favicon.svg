@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="background-color:#1a1a1a;">
+    <defs>
+        <path id="v" d="M128 128 L256 384 L384 128" stroke-width="30" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+    </defs>
+    
+    <!-- Glitch Layer 1 (Cyan) -->
+    <use href="#v" stroke="#00FFFF" transform="translate(-10, 5)"/>
+    
+    <!-- Glitch Layer 2 (Magenta) -->
+    <use href="#v" stroke="#FF00FF" transform="translate(10, -5)"/>
+    
+    <!-- Main V (White) -->
+    <use href="#v" stroke="#FFFFFF"/>
+
+    <!-- Horizontal Glitch Lines -->
+    <g stroke="#FFFFFF" stroke-width="15">
+        <path d="M100 200 H 180" transform="translate(15, 0)"/>
+        <path d="M300 250 H 400" transform="translate(-20, 0)"/>
+        <path d="M150 350 H 250" transform="translate(10, 0)"/>
+    </g>
+</svg>
