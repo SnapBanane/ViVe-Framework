@@ -12,12 +12,21 @@ from reportlab.pdfgen import canvas
 import io
 import threading
 import uuid # Add uuid for device IDs
+from vive.modules.webcam.webcam_streamer import WebcamStreamer
+import asyncio
 
 # --- App Setup ---
 app = Flask(__name__, 
            template_folder='templates',
            static_folder='static')
 CORS(app)
+
+# --- Webcam Streamer Setup ---
+webcam_streamer = None
+
+def initialize_webcam_streamer(server_instance):
+    global webcam_streamer
+    webcam_streamer = WebcamStreamer(vive_server=server_instance)
 
 # --- Directory Setup ---
 INBOX_DIR = os.path.join(os.getcwd(), 'inbox')
@@ -192,6 +201,11 @@ def static_files(filename):
     """Serve static files"""
     return send_from_directory(app.static_folder, filename)
 
+@app.route('/webcam')
+def webcam():
+    """Serves the webcam streaming page."""
+    return render_template('webcam.html')
+
 # --- API Routes (Updated and Added) ---
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -261,6 +275,15 @@ def get_server_ip():
     from vive.modules.portManager.manager import PortManager
     ip = PortManager().get_local_ip()
     return jsonify({'ip': ip})
+
+@app.route('/api/webcam/offer', methods=['POST'])
+async def webcam_offer():
+    """Handle the WebRTC offer from the webcam client."""
+    if not webcam_streamer:
+        return jsonify({"error": "Webcam streamer not initialized"}), 500
+    params = await request.get_json()
+    answer = await webcam_streamer.handle_offer(params)
+    return jsonify(answer)
 
 # --- Error Handlers (Unchanged) ---
 @app.errorhandler(404)

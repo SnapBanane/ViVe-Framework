@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViVe Webcam</title>
+    <link rel="stylesheet" href="/static/mobile.css"> <!-- Reusing mobile styles for simplicity -->
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+    <div class="container">
+        <h1>ViVe Webcam Stream</h1>
+        <video id="video" autoplay playsinline></video>
+        <button id="start-stream">Start Streaming</button>
+        <p id="status">Status: Disconnected</p>
+    </div>
+    <script src="/static/webcam.js"></script>
+</body>
+</html>

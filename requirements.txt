@@ -12,3 +12,5 @@ reportlab
 numpy
 qrcode
 zeroconf
+aiortc
+av

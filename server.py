@@ -2,11 +2,13 @@ import os
 import sys
 import time
 import threading
+import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
 from rich.console import Console
 from vive.modules.webserver.server import WebServer
 from vive.modules.portManager.manager import PortManager
+from vive.modules.webcam.webcam_streamer import WebcamStreamer
 
 console = Console()
 VIVE_ENV_PATH = os.path.join(os.path.dirname(__file__), "vive", ".env")
@@ -15,9 +17,11 @@ class ViveServer:
     def __init__(self):
         self.web_server = None
         self.port_manager = PortManager()
+        self.webcam_streamer = WebcamStreamer(vive_server=self)
         self.services = {
             "webserver": {"status": "stopped", "port": 5000, "instance": None},
-            "port_manager": {"status": "stopped", "port": None, "instance": self.port_manager}
+            "port_manager": {"status": "stopped", "port": None, "instance": self.port_manager},
+            "webcam_streamer": {"status": "stopped", "instance": self.webcam_streamer}
         }
         self.logs = []
         self.config = {}
@@ -53,6 +57,9 @@ class ViveServer:
             self.services["webserver"]["status"] = "running"
             self.services["webserver"]["instance"] = self.web_server
             self.log(f"Web server started on port {self.services['webserver']['port']}")
+            # Initialize the webcam streamer with the server instance
+            from vive.modules.webserver.app import initialize_webcam_streamer
+            initialize_webcam_streamer(self)
         except Exception as e:
             self.log(f"Failed to start web server: {e}", "ERROR")
             self.services["webserver"]["status"] = "error"
@@ -91,6 +98,8 @@ class ViveServer:
         self.log("Stopping services...", "INFO")
         if self.web_server:
             self.web_server.stop()
+        if self.webcam_streamer:
+            asyncio.run(self.webcam_streamer.close())
         if self.port_manager:
             # Assuming the port manager has a similar stop method if needed.
             # For now, we rely on daemon threads terminating with the app.

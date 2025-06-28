@@ -90,4 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
         table.appendChild(tbody);
         timetableData.appendChild(table);
     }
+
+    document.getElementById('stop-server').addEventListener('click', () => {
+        fetch('/api/stop', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => alert(data.message));
+    });
+
+    document.getElementById('open-webcam').addEventListener('click', () => {
+        window.open('/webcam', '_blank');
+    });
 });
